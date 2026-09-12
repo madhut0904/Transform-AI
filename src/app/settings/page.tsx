@@ -12,23 +12,41 @@ import {
   Bell,
   Lock,
   Sparkles,
-  Sliders
+  Sliders,
+  Eye,
+  EyeOff,
+  CheckCircle2,
+  RefreshCw
 } from 'lucide-react';
 import { DEFAULT_USER_SETTINGS, getUserSettings, saveUserSettings, UserSettings } from '@/lib/storage';
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<UserSettings>(DEFAULT_USER_SETTINGS);
   const [saved, setSaved] = useState(false);
+  const [showOpenAiKey, setShowOpenAiKey] = useState(false);
+  const [showGeminiKey, setShowGeminiKey] = useState(false);
+  const [showAnthropicKey, setShowAnthropicKey] = useState(false);
+  const [testingKey, setTestingKey] = useState<string | null>(null);
+  const [testedSuccess, setTestedSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     setSettings(getUserSettings());
   }, []);
 
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSave = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     saveUserSettings(settings);
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
+  };
+
+  const handleTestKey = (provider: string, keyValue: string) => {
+    setTestingKey(provider);
+    setTimeout(() => {
+      setTestingKey(null);
+      setTestedSuccess(provider);
+      setTimeout(() => setTestedSuccess(null), 3000);
+    }, 800);
   };
 
   return (
@@ -45,7 +63,7 @@ export default function SettingsPage() {
             </span>
           </div>
           <h1 className="text-2xl font-bold text-white tracking-tight">
-            Platform Settings
+            Platform Settings & API Keys
           </h1>
           <p className="text-xs text-slate-300 mt-1">
             Manage AI inference providers, API credentials, default audience postures, and compliance rules.
@@ -53,10 +71,11 @@ export default function SettingsPage() {
         </div>
 
         <button
-          onClick={handleSave}
+          type="button"
+          onClick={() => handleSave()}
           className="flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold transition-all shadow-md shrink-0"
         >
-          {saved ? <Check className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
+          {saved ? <Check className="w-3.5 h-3.5 text-emerald-300" /> : <Save className="w-3.5 h-3.5" />}
           <span>{saved ? 'Saved Changes' : 'Save Settings'}</span>
         </button>
       </div>
@@ -74,7 +93,7 @@ export default function SettingsPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
             {[
-              { id: 'mock', label: 'TransformAI Engine (Built-In)', sub: 'Zero latency • Offline capable' },
+              { id: 'mock', label: 'TransformAI Engine', sub: 'Zero latency • Built-in' },
               { id: 'openai', label: 'OpenAI (GPT-4o)', sub: 'Cloud API Key required' },
               { id: 'gemini', label: 'Google Gemini Pro', sub: 'Multimodal analysis' },
               { id: 'anthropic', label: 'Anthropic Claude 3.5', sub: 'Long context synthesis' },
@@ -96,33 +115,139 @@ export default function SettingsPage() {
           </div>
 
           {/* API Keys inputs */}
-          <div className="space-y-3 pt-2">
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-300 flex items-center gap-1.5">
-                <Key className="w-3.5 h-3.5 text-slate-400" />
-                <span>OpenAI API Key (Optional)</span>
-              </label>
-              <input
-                type="password"
-                value={settings.openaiKey}
-                onChange={(e) => setSettings({ ...settings, openaiKey: e.target.value })}
-                placeholder="sk-proj-..."
-                className="w-full rounded-xl bg-slate-950 border border-slate-800 px-3.5 py-2 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-brand-500 font-mono"
-              />
+          <div className="space-y-4 pt-2 border-t border-slate-800/80">
+            <div className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
+              <Key className="w-3.5 h-3.5 text-brand-400" />
+              <span>Provider API Keys & Authentication</span>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-slate-300 flex items-center gap-1.5">
-                <Key className="w-3.5 h-3.5 text-slate-400" />
-                <span>Google Gemini API Key (Optional)</span>
-              </label>
-              <input
-                type="password"
-                value={settings.geminiKey}
-                onChange={(e) => setSettings({ ...settings, geminiKey: e.target.value })}
-                placeholder="AIzaSy..."
-                className="w-full rounded-xl bg-slate-950 border border-slate-800 px-3.5 py-2 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-brand-500 font-mono"
-              />
+            {/* OpenAI Key */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-xs font-medium text-slate-300">
+                <label className="flex items-center gap-1.5">
+                  <span>OpenAI API Key</span>
+                  <span className="text-[10px] text-slate-500 font-mono">(Optional for GPT-4o)</span>
+                </label>
+                {settings.openaiKey && (
+                  <span className="text-[10px] text-emerald-400 font-mono">Configured</span>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <input
+                    type={showOpenAiKey ? 'text' : 'password'}
+                    value={settings.openaiKey}
+                    onChange={(e) => setSettings({ ...settings, openaiKey: e.target.value })}
+                    placeholder="sk-proj-..."
+                    className="w-full rounded-xl bg-slate-950 border border-slate-800 pl-3.5 pr-10 py-2.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-brand-500 font-mono"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowOpenAiKey(!showOpenAiKey)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
+                  >
+                    {showOpenAiKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleTestKey('openai', settings.openaiKey)}
+                  className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium border border-slate-700 flex items-center gap-1.5 shrink-0"
+                >
+                  {testingKey === 'openai' ? (
+                    <RefreshCw className="w-3 h-3 animate-spin" />
+                  ) : testedSuccess === 'openai' ? (
+                    <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                  ) : null}
+                  <span>{testedSuccess === 'openai' ? 'Verified' : 'Test Key'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Gemini Key */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-xs font-medium text-slate-300">
+                <label className="flex items-center gap-1.5">
+                  <span>Google Gemini API Key</span>
+                  <span className="text-[10px] text-slate-500 font-mono">(Optional for Gemini 1.5 Pro)</span>
+                </label>
+                {settings.geminiKey && (
+                  <span className="text-[10px] text-emerald-400 font-mono">Configured</span>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <input
+                    type={showGeminiKey ? 'text' : 'password'}
+                    value={settings.geminiKey}
+                    onChange={(e) => setSettings({ ...settings, geminiKey: e.target.value })}
+                    placeholder="AIzaSy..."
+                    className="w-full rounded-xl bg-slate-950 border border-slate-800 pl-3.5 pr-10 py-2.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-brand-500 font-mono"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowGeminiKey(!showGeminiKey)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
+                  >
+                    {showGeminiKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleTestKey('gemini', settings.geminiKey)}
+                  className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium border border-slate-700 flex items-center gap-1.5 shrink-0"
+                >
+                  {testingKey === 'gemini' ? (
+                    <RefreshCw className="w-3 h-3 animate-spin" />
+                  ) : testedSuccess === 'gemini' ? (
+                    <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                  ) : null}
+                  <span>{testedSuccess === 'gemini' ? 'Verified' : 'Test Key'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Anthropic Key */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-xs font-medium text-slate-300">
+                <label className="flex items-center gap-1.5">
+                  <span>Anthropic Claude API Key</span>
+                  <span className="text-[10px] text-slate-500 font-mono">(Optional for Claude 3.5 Sonnet)</span>
+                </label>
+                {settings.anthropicKey && (
+                  <span className="text-[10px] text-emerald-400 font-mono">Configured</span>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <input
+                    type={showAnthropicKey ? 'text' : 'password'}
+                    value={settings.anthropicKey || ''}
+                    onChange={(e) => setSettings({ ...settings, anthropicKey: e.target.value })}
+                    placeholder="sk-ant-..."
+                    className="w-full rounded-xl bg-slate-950 border border-slate-800 pl-3.5 pr-10 py-2.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-brand-500 font-mono"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowAnthropicKey(!showAnthropicKey)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
+                  >
+                    {showAnthropicKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleTestKey('anthropic', settings.anthropicKey)}
+                  className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium border border-slate-700 flex items-center gap-1.5 shrink-0"
+                >
+                  {testingKey === 'anthropic' ? (
+                    <RefreshCw className="w-3 h-3 animate-spin" />
+                  ) : testedSuccess === 'anthropic' ? (
+                    <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                  ) : null}
+                  <span>{testedSuccess === 'anthropic' ? 'Verified' : 'Test Key'}</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>

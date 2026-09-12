@@ -1,8 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
   Sparkles,
@@ -12,8 +12,7 @@ import {
   Settings,
   Zap,
   ShieldCheck,
-  ChevronRight,
-  ExternalLink
+  Command
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -23,18 +22,41 @@ interface SidebarProps {
 
 export default function Sidebar({ collapsed }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
 
   const navItems = [
-    { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-    { name: 'New Transformation', href: '/transform', icon: Sparkles, badge: 'AI' },
-    { name: 'History', href: '/history', icon: History },
-    { name: 'Templates', href: '/templates', icon: Layers },
-    { name: 'Analytics', href: '/analytics', icon: BarChart3 },
-    { name: 'Settings', href: '/settings', icon: Settings },
+    { name: 'Dashboard', href: '/', icon: LayoutDashboard, keyNum: '1' },
+    { name: 'New Transformation', href: '/transform', icon: Sparkles, badge: 'AI', keyNum: '2' },
+    { name: 'History', href: '/history', icon: History, keyNum: '3' },
+    { name: 'Templates', href: '/templates', icon: Layers, keyNum: '4' },
+    { name: 'Analytics', href: '/analytics', icon: BarChart3, keyNum: '5' },
+    { name: 'Settings', href: '/settings', icon: Settings, keyNum: '6' },
   ];
 
+  // Global hotkeys (Alt+1 through Alt+6)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if user is actively typing in an input/textarea
+      const target = e.target as HTMLElement;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+        return;
+      }
+
+      if (e.altKey || e.metaKey || e.ctrlKey) {
+        const item = navItems.find(n => n.keyNum === e.key);
+        if (item) {
+          e.preventDefault();
+          router.push(item.href);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [router]);
+
   return (
-    <aside className="w-64 bg-slate-900/95 border-r border-slate-800 flex flex-col h-screen fixed left-0 top-0 z-30 transition-all duration-300">
+    <aside className="w-64 bg-slate-900/95 border-r border-slate-800 flex flex-col h-screen fixed left-0 top-0 z-30 transition-all duration-300 select-none">
       {/* Brand Header */}
       <div className="h-16 px-5 flex items-center justify-between border-b border-slate-800/80">
         <Link href="/" className="flex items-center gap-3 group">
@@ -54,8 +76,11 @@ export default function Sidebar({ collapsed }: SidebarProps) {
 
       {/* Navigation */}
       <div className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-        <div className="px-3 py-1.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-          Workspace
+        <div className="px-3 py-1.5 flex items-center justify-between text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+          <span>Workspace</span>
+          <span className="text-[10px] text-slate-400 font-mono flex items-center gap-1 lowercase">
+            <Command className="w-2.5 h-2.5" /> Alt+1..6
+          </span>
         </div>
         {navItems.map((item) => {
           const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
@@ -64,23 +89,30 @@ export default function Sidebar({ collapsed }: SidebarProps) {
             <Link
               key={item.name}
               href={item.href}
-              className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all group ${
+              className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all group ${
                 isActive
-                  ? 'bg-brand-600 text-white shadow-md shadow-brand-600/20'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-800/70'
+                  ? 'bg-brand-600 text-white shadow-md shadow-brand-600/25 font-semibold'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800/80'
               }`}
             >
               <div className="flex items-center gap-3">
                 <Icon className={`w-4 h-4 transition-colors ${isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'}`} />
                 <span>{item.name}</span>
               </div>
-              {item.badge && (
-                <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono font-semibold ${
-                  isActive ? 'bg-white/20 text-white' : 'bg-brand-500/20 text-brand-300 border border-brand-500/30'
+              <div className="flex items-center gap-1.5">
+                {item.badge && (
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono font-semibold ${
+                    isActive ? 'bg-white/20 text-white' : 'bg-brand-500/20 text-brand-300 border border-brand-500/30'
+                  }`}>
+                    {item.badge}
+                  </span>
+                )}
+                <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity ${
+                  isActive ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400'
                 }`}>
-                  {item.badge}
+                  ⌥{item.keyNum}
                 </span>
-              )}
+              </div>
             </Link>
           );
         })}
